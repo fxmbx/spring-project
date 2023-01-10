@@ -29,12 +29,12 @@ public enum ApplicationUserRole {
         this.permissions = permissions;
     }
     
-    public Set<ApplicationUserPermission> getPermission(){
+    public Set<ApplicationUserPermission> getPermissions(){
         return permissions;
     }
 
     public Set<SimpleGrantedAuthority> getGrantedAuthorities(){
-       Set<SimpleGrantedAuthority> permissions = getPermission()
+       Set<SimpleGrantedAuthority> permissions = getPermissions()
             .stream()
             .map(p-> 
                 new SimpleGrantedAuthority(p.getPermission()))

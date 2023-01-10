@@ -5,6 +5,8 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -16,18 +18,26 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
+import com.funbi.springproject.auth.ApplicationUserService;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 public class ApplicationSecurityConfig  {
 
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationUserService applicationUserService;
+
+
     private final String adminManagementBaseURl = "/management/api/**";
     private final String defualtSuccessURL = "/courses";
     private final String loginURL = "/login";
     private final String logoutURL = "/logout";
+    
     @Autowired
-    public ApplicationSecurityConfig(PasswordEncoder passwordEncoder){
+    public ApplicationSecurityConfig(PasswordEncoder passwordEncoder, 
+    ApplicationUserService applicationUserService) {
+        this.applicationUserService = applicationUserService;
         this.passwordEncoder = passwordEncoder;
     }
     
@@ -47,59 +57,20 @@ public class ApplicationSecurityConfig  {
 
         .anyRequest()
             .authenticated()
-        .and().
-        formLogin()
-            .loginPage(loginURL)
-            .permitAll()
-            .defaultSuccessUrl(defualtSuccessURL,true)
-            .passwordParameter("password")
-            .usernameParameter("username")
         .and()
-            .rememberMe()
-                .tokenValiditySeconds((int)TimeUnit.DAYS.toSeconds(21))
-                .key("somethingVerySecure")
-                .rememberMeParameter("remember-me")
-        .and()
-            .logout()
-                .logoutUrl(logoutURL)
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "POST"))
-                .clearAuthentication(true)
-                .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID","remember-me")
-                .logoutSuccessUrl(loginURL)
-                ;
+            .authenticationProvider(daoAuthenticationProvider());
             
         return http.build();
     }
 
+
     @Bean
-    protected UserDetailsService userDetailsService() {
-        UserDetails funbiuser = User
-        .builder()
-        .username("funbi")
-        .password(passwordEncoder.encode("password"))
-        // .roles(ApplicationUserRole.STUDENT.name())
-        .authorities(ApplicationUserRole.STUDENT.getGrantedAuthorities())
-        .build();
-        UserDetails tundeUser = User
-        .builder()
-        .username("tunde")
-        .password(passwordEncoder.encode("password1234"))
-        // .roles(ApplicationUserRole.ADMINTRAINEE.name())
-        .authorities(ApplicationUserRole.ADMINTRAINEE.getGrantedAuthorities())
-        .build();
-        UserDetails toyinUser = User
-        .builder()
-        .username("toyin")
-        .password(passwordEncoder.encode("password123"))
-        // .roles(ApplicationUserRole.ADMIN.name())
-        .authorities(ApplicationUserRole.ADMIN.getGrantedAuthorities())
-        .build();
+    public DaoAuthenticationProvider daoAuthenticationProvider(){
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setPasswordEncoder(passwordEncoder);
+        provider.setUserDetailsService(applicationUserService);
 
-
-        return new InMemoryUserDetailsManager(funbiuser, toyinUser,tundeUser);
-
-
+        return provider;
     }
 }
 
