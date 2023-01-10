@@ -1,9 +1,9 @@
-package com.funbi.springproject.student;
+package com.funbi.springproject.controller;
 
 import java.util.Arrays;
 import java.util.List;
 
-import org.springframework.data.repository.query.Param;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.funbi.springproject.student.Student;
 
 @RestController
 @RequestMapping("management/api/v1/students")
@@ -23,22 +25,26 @@ public class StudentManagementController {
     ); 
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_ADMINTRAINEE')")
     public List<Student> getAllStudents(){
         return STUDENTS;
     }
     @PostMapping("/register")
+    @PreAuthorize("hasAuthority('student:write')")
     public void registerNewStudents(@RequestBody() Student request){
-        int id = STUDENTS.get(STUDENTS.size()-1).getStudentId()+ 1;
+        Integer id = (STUDENTS.get(STUDENTS.size()-1).getStudentId()+1);
         var stud = new Student(id,request.getStudentName());
         STUDENTS.add(stud);
 
     }
     @DeleteMapping(path="{studentId}")
+    @PreAuthorize("hasAuthority('student:write')")
     public void deleteStudent(@PathVariable("studentId") Integer studentId){
         System.out.println("Deleted");
     }
 
     @PutMapping(path = "{studentId}")
+    @PreAuthorize("hasAuthority('student:write')")
     public void updateStudent(@PathVariable("studentId") Integer studentId, Student student){
         System.out.println(String.format("%s %s", studentId, student));
     }
